@@ -3,3 +3,78 @@
   padding: 0;
   box-sizing: border-box;
 }
+
+body {
+  background-color: rgb(240, 219, 189);
+}
+
+.game {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 auto;
+  margin-top: 40px;
+  width: 500px;
+}
+
+.game__button {
+  margin: 10px;
+}
+
+.btn {
+  cursor: pointer;
+}
+
+.btn--start {
+  padding: 5px 10px;
+  background-color: orange;
+  border: 1px solid orange;
+  border-radius: 5px;
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.btn--start:hover {
+  background-color: rgb(185, 90, 1);
+}
+
+.game__info {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.info__found {
+  margin-bottom: 5px;
+}
+
+.game__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 10px;
+  column-gap: 20px;
+  width: 100%;
+  height: 500px;
+}
+
+.stone {
+  transition: all 0.3s;
+}
+
+.stone:hover {
+  transform: scale(1.1);
+}
+
+.stone:disabled {
+  cursor: not-allowed;
+}
+
+.stone--hide {
+  filter: grayscale(1);
+}
+
+.stone--pair:disabled {
+  filter: grayscale(0.3);
+  cursor: not-allowed;
+}

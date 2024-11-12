@@ -35,121 +35,176 @@ const gems = [
   {
     id: 11,
     color: "red",
-    path: "./img/t1.png",
+    img: "./img/t1.png",
   },
   {
     id: 52,
     color: "blue",
-    path: "./img/t2.png",
+    img: "./img/t2.png",
   },
   {
     id: 73,
     color: "green",
-    path: "./img/t3.png",
+    img: "./img/t3.png",
   },
   {
     id: 41,
     color: "purple",
-    path: "./img/t4.png",
+    img: "./img/t4.png",
+  },
+  {
+    id: 43,
+    color: "red",
+    img: "./img/t1.png",
+  },
+  {
+    id: 56,
+    color: "blue",
+    img: "./img/t2.png",
+  },
+  {
+    id: 67,
+    color: "green",
+    img: "./img/t3.png",
+  },
+  {
+    id: 433,
+    color: "purple",
+    img: "./img/t4.png",
+  },
+  {
+    id: 567,
+    color: "red",
+    img: "./img/t1.png",
+  },
+  {
+    id: 345,
+    color: "blue",
+    img: "./img/t2.png",
+  },
+  {
+    id: 234,
+    color: "green",
+    img: "./img/t3.png",
+  },
+  {
+    id: 546,
+    color: "purple",
+    img: "./img/t4.png",
+  },
+  {
+    id: 78,
+    color: "red",
+    img: "./img/t1.png",
+  },
+  {
+    id: 34,
+    color: "blue",
+    img: "./img/t2.png",
+  },
+  {
+    id: 546,
+    color: "green",
+    img: "./img/t3.png",
+  },
+  {
+    id: 78,
+    color: "purple",
+    img: "./img/t4.png",
   },
 ];
 
 class Game extends BasicComponent {
-  constructor(Button, GameInfo, GameField, gems, Gem) {
+  _state = {
+    stonesStatus: [],
+  };
+
+  constructor(Button, gems, Stone) {
     super();
     this._Button = Button;
-    this._GameInfo = GameInfo;
-    this._GameField = GameField;
     this._gems = gems;
-    this._Gem = Gem;
+    this._Stone = Stone;
     this._init();
   }
 
   _init() {
     super._init();
+    this._setStateStonesStatus(
+      this._gems.map((gem) => {
+        return {
+          ...gem,
+          disabled: true,
+          hide: false,
+        };
+      })
+    );
+    this._gems = undefined; // чтобы не работать без состояния
     this._render();
   }
 
+  _setStateStonesStatus(stonesStatus) {
+    this._state.stonesStatus = stonesStatus;
+  }
+
   _render() {
-    this._subElements.btn.insertAdjacentElement("beforeend", new this._Button().element);
-    this._element.insertAdjacentElement("beforeend", new this._GameInfo().element);
-    this._element.insertAdjacentElement("beforeend", new this._GameField(this._gems, this._Gem).element);
+    this._subElements.btn.insertAdjacentElement(
+      "beforeend",
+      new this._Button({ use: "start", text: "Start game", handler: () => console.log("click") }).element
+    );
+    this._subElements.field.innerHTML = "";
+    this._subElements.field.append(...this._generateTiles());
+  }
+
+  _generateTiles() {
+    return this._state.stonesStatus.map((gem) => {
+      return new this._Stone(gem).element; //передать handler
+    });
   }
 
   _getTemplate() {
     return `<div class="game">
 							<div class="game__button" data-element="btn"></div>
+							<div class="game__info">
+         				<p class="game__found">Found parts: ${0}</p>
+          			<p class="game__total">Total parts: ${2}</p>
+        			</div>
+							<div class="game__field" data-element="field"></div>
 						</div>`;
   }
 }
 
 class Button extends BasicComponent {
-  constructor() {
+  constructor({ use, text, handler }) {
     super();
+    this._use = use;
+    this._text = text;
+    this._handler = handler;
     this._init();
   }
+
   _init() {
     super._init();
     this._addListeners();
   }
 
-  _addListeners() {}
-
-  _getTemplate() {
-    return `<button class="btn btn--start">Start game</button>`;
-  }
-}
-class GameInfo extends BasicComponent {
-  constructor() {
-    super();
-    this._init();
-  }
-  _init() {
-    super._init();
+  _addListeners() {
+    this._element.addEventListener("click", this._handler);
   }
 
   _getTemplate() {
-    return `<div class="game__info">
-         			<p class="info__found">Found parts: ${0}</p>
-          		<p class="info__total">Total parts: ${2}</p>
-        		</div>`;
+    return `<button class="btn btn--${this._use}">${this._text}</button>`;
   }
 }
 
-class GameField extends BasicComponent {
-  constructor(gems, Gem) {
+class Stone extends BasicComponent {
+  constructor({ color, img, hide, pair, disabled }) {
     super();
-    this._gems = gems;
-    this._Gem = Gem;
-    this._init();
-  }
-
-  _init() {
-    super._init();
-    this._render();
-  }
-
-  _generateGems() {
-    return gems.map((gem) => {
-      return new this._Gem(gem).element;
-    });
-  }
-
-  _render() {
-    this._element.append(...this._generateGems());
-  }
-
-  _getTemplate() {
-    return `<ul class="game__field"></ul>`;
-  }
-}
-
-class Gem extends BasicComponent {
-  constructor({ id, color, path }) {
-    super();
-    this._id = id;
     this._color = color;
-    this._path = path;
+    this._img = img;
+    this._hide = hide;
+    this._pair = pair;
+    this._disabled = disabled;
+
     this._init();
   }
 
@@ -158,16 +213,12 @@ class Gem extends BasicComponent {
   }
 
   _getTemplate() {
-    return `<li class="field__gem">
-            	<img src=${this._path} alt="img" />
-          	</li>`;
+    return `<button class="stone">
+            	<img src=${this._img} alt="" />
+          	</button>`;
   }
 }
-
-class GemList extends BasicComponent {}
 
 const root = document.querySelector(".root");
 
-// root.insertAdjacentElement("beforeend", new Game(Button).element);
-
-root.insertAdjacentElement("beforeend", new Game(Button, GameInfo, GameField, gems, Gem).element);
+root.insertAdjacentElement("beforeend", new Game(Button, gems, Stone).element);
