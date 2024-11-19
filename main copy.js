@@ -147,74 +147,19 @@ class Game extends BasicComponent {
 
   _setStateStonesStatus(stonesStatus) {
     this._state.stonesStatus = stonesStatus;
-  }
-
-  _setFoundPairs(num) {
-    this._state.foundPairs = num;
-  }
-
-  _setStatePairedStones(obj) {
-    if (this._state.pairedStones.length === 2) {
-      this._state.pairedStones = [obj];
-      return;
-    }
-    this._state.pairedStones = [...this._state.pairedStones, obj];
-  }
-
-  _isMatched() {
-    if (this._state.pairedStones.length < 2) {
-      return false;
-    }
-
-    if (this._state.pairedStones[0].color === this._state.pairedStones[1].color) {
-      return true;
-    }
-
-    return false;
-  }
-
-  _setStateGameStarted() {
-    this._state.gameStarted = true;
-  }
-
-  _stonesStatusHandler(obj) {
-    if (this._state.pairedStones.length === 1 && this._state.pairedStones[0].id === obj.id) {
-      return;
-    }
-
-    this._setStatePairedStones(obj);
-
-    if (this._isMatched()) {
-      // значит пара найдена
-      const idsMatched = [this._state.pairedStones[0].id, this._state.pairedStones[1].id];
-
-      this._setStateStonesStatus(
-        this._state.stonesStatus.map((gem) => {
-          if (idsMatched.includes(gem.id)) {
-            return {
-              ...gem,
-              disabled: true,
-              hide: false,
-            };
-          }
-          return gem;
-        })
-      );
-      this._setFoundPairs(this._state.foundPairs + 1);
-    }
     this._render();
   }
 
-  _handleStartGame() {
-    this._setStateGameStarted();
+  _setStateGameStarted() {
+    this._state.gameStarted = !this._state.gameStarted;
     //меняем disabled и hide состояния при начале игры
     if (this._state.gameStarted) {
       this._setStateStonesStatus(
         this._state.stonesStatus.map((gem) => {
           return {
             ...gem,
-            disabled: false,
-            hide: true,
+            disabled: !this._state.gameStarted,
+            hide: this._state.gameStarted,
           };
         })
       );
@@ -222,27 +167,74 @@ class Game extends BasicComponent {
     this._render();
   }
 
-  _generateTiles() {
-    return this._state.stonesStatus.map((gem) => new this._Stone(gem, this._stonesStatusHandler.bind(this)).element);
+  _setFoundPairs() {
+    let pairArrayLength = this._state.pairedStones.length === 2;
+    let pairTrue = this._state.pairedStones[0] === this._state.pairedStones[1];
+    console.log(this._state.gameStarted);
+
+    if (this._state.gameStarted && pairArrayLength && pairTrue) {
+      this._state.foundPairs += 1;
+    } else if (!this._state.gameStarted) {
+      this._state.foundPairs = 0;
+    }
+    this._render();
   }
 
-  _generateButton() {
-    return new this._Button({
-      use: "start",
-      text: this._state.gameStarted ? "Finish game" : "Start game",
-      handler: this._handleStartGame.bind(this),
-    }).element;
+  _setStatePairedStones(color) {
+    //если в массиве менее 2 элементов, то заполняем его выбранным цветом
+    //если более, то обнуляем и заполняем
+    if (this._state.pairedStones.length < 2) {
+      this._state.pairedStones.push(color);
+    } else {
+      this._state.pairedStones = [];
+      this._state.pairedStones.push(color);
+    }
+    this._setFoundPairs();
+    this._render();
+  }
+
+  _generateTiles() {
+    return this._state.stonesStatus.map((gem) => {
+      //если кликаем на показать камни то передаем hide: false, но если цвета не совпали то hide: true
+      //true  console.log(this._state.gameStarted || (this._state.pairedStones[0] !== this._state.pairedStones[1] && this._state.pairedStones.length === 2), "1");
+      //false console.log(!this._state.gameStarted || (this._state.pairedStones.length >= 1 && this._state.pairedStones[0] === this._state.pairedStones[1]), "2");
+
+      if (this._state.gameStarted) {
+        return new this._Stone(
+          { ...gem, disabled: false, hide: true, paired: [] },
+          this._setStateStonesStatus.bind(this),
+          this._setStatePairedStones.bind(this)
+        ).element;
+      } else if (!this._state.gameStarted || this._state.pairedStones[0] === this._state.pairedStones[1]) {
+        return new this._Stone(
+          { ...gem, disabled: true, hide: false, paired: [] },
+          this._setStateStonesStatus.bind(this),
+          this._setStatePairedStones.bind(this)
+        ).element;
+      }
+    });
   }
 
   _render() {
+    this._subElements.btn.innerHTML = "";
+    if (!this._state.gameStarted) {
+      console.log(!this._state.gameStarted);
+
+      this._subElements.btn.insertAdjacentElement(
+        "beforeend",
+        new this._Button({ use: "start", text: "Start game", handler: this._setStateGameStarted.bind(this) }).element
+      );
+    } else {
+      this._subElements.btn.insertAdjacentElement(
+        "beforeend",
+        new this._Button({ use: "end", text: "Finish game", handler: this._setStateGameStarted.bind(this) }).element
+      );
+    }
+
     this._subElements.field.innerHTML = "";
     this._subElements.field.append(...this._generateTiles());
 
-    this._subElements.btn.innerHTML = "";
-    this._subElements.btn.append(this._generateButton());
-
-    this._subElements.total.innerHTML = `Total parts: ${this._state.stonesStatus.length}`; //переписать
-    //кнопка finish сделать
+    this._subElements.total.innerHTML = `Total parts: ${this._state.stonesStatus.length}`;
 
     !this._state.gameStarted
       ? (this._subElements.found.innerHTML = `Found parts: ${0}`)
@@ -285,13 +277,13 @@ class Button extends BasicComponent {
 }
 
 class Stone extends BasicComponent {
-  constructor({ id, color, img, disabled, hide }, stoneStatusHandler, pairStatusHandler) {
+  constructor({ color, img, disabled, hide, pair }, stoneStatusHandler, pairStatusHandler) {
     super();
-    this._id = id;
     this._color = color;
     this._img = img;
     this._disabled = disabled;
     this._hide = hide;
+    this._pair = pair;
     this._stoneStatusHandler = stoneStatusHandler;
     this._pairStatusHandler = pairStatusHandler;
     this._init();
@@ -300,16 +292,24 @@ class Stone extends BasicComponent {
   _init() {
     super._init();
     this._addListeners();
+    this._render();
+    // console.log(this._hide);
   }
 
   _addListeners() {
     this._element.addEventListener("click", () => {
-      this._stoneStatusHandler({ id: this._id, color: this._color });
+      this._stoneStatusHandler;
+      this._pairStatusHandler(this._color);
+      this._render();
     });
   }
 
+  _render() {
+    this._disabled ? this._element.setAttribute("disabled", "") : this._element.removeAttribute("disabled");
+  }
+
   _getTemplate() {
-    return `<button class="stone ${this._hide ? "stone--hide" : ""}" ${this._disabled ? "disabled" : ""}>
+    return `<button class="stone${this._hide ? "--hide" : ""}">
             	<img src=${this._img} alt="" />
           	</button>`;
   }
@@ -322,4 +322,3 @@ root.insertAdjacentElement("beforeend", new Game(Button, gems, Stone).element);
 // Проблемы:
 // массив пар не обновляется при старте/конце игры
 // выбранные пары не становятся цветными
-//при нажатии на один и тот же камень это засчитывается как пара - через id можно попробовать
